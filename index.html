@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <main class="app">
+    <header class="app-header">
+      <h1>QR Code Generator</h1>
+      <p class="subtitle">Turn any text or link into a QR code, instantly, in your browser.</p>
+    </header>
+
+    <section class="card">
+      <label for="qr-text">Text or URL</label>
+      <textarea id="qr-text" rows="3" placeholder="Type text, or paste a URL (e.g. https://example.com)"></textarea>
+      <div class="char-counter"><span id="char-count">0</span> / 1000 characters</div>
+      <p id="error-msg" class="error-msg" hidden></p>
+
+      <div class="options-row">
+        <div class="option">
+          <label for="qr-size">Size</label>
+          <select id="qr-size">
+            <option value="150">150 x 150</option>
+            <option value="250" selected>250 x 250</option>
+            <option value="350">350 x 350</option>
+            <option value="500">500 x 500</option>
+          </select>
+        </div>
+
+        <div class="option">
+          <label for="fg-color">Foreground</label>
+          <input type="color" id="fg-color" value="#000000" />
+        </div>
+
+        <div class="option">
+          <label for="bg-color">Background</label>
+          <input type="color" id="bg-color" value="#ffffff" />
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="generate-btn" class="btn primary">Generate QR Code</button>
+        <button id="clear-btn" class="btn secondary">Clear</button>
+      </div>
+    </section>
+
+    <section class="card result-card">
+      <div id="empty-state" class="empty-state">
+        <p>Your QR code will appear here.</p>
+      </div>
+
+      <div id="qr-output" class="qr-output" hidden>
+        <canvas id="qr-canvas"></canvas>
+        <div class="button-row">
+          <button id="download-btn" class="btn primary">Download PNG</button>
+          <button id="copy-btn" class="btn secondary">Copy Image</button>
+        </div>
+        <p id="copy-msg" class="copy-msg" hidden></p>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <p>Hosted on Azure Static Web Apps · No server, no tracking, no data leaves your browser.</p>
+    </footer>
+  </main>
+
+  <script src="vendor/qrcode.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

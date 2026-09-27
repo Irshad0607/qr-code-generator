@@ -1,0 +1,185 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(180deg, #f4f6fb 0%, #eef1f8 100%);
+  color: #1f2430;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.app {
+  width: 100%;
+  max-width: 480px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0;
+  color: #5b6272;
+  font-size: 0.95rem;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 4px 18px rgba(20, 25, 40, 0.08);
+  margin-bottom: 18px;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333a47;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #d7dbe4;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+textarea:focus, select:focus, input[type="color"]:focus {
+  outline: 2px solid #5468ff;
+  outline-offset: 1px;
+}
+
+.char-counter {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #8991a1;
+  margin-top: 4px;
+}
+
+.error-msg {
+  color: #d0342c;
+  background: #fdecec;
+  border: 1px solid #f6c9c7;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: 10px;
+}
+
+.options-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.option {
+  flex: 1;
+  min-width: 100px;
+}
+
+select {
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid #d7dbe4;
+  font-size: 0.9rem;
+  background: white;
+}
+
+input[type="color"] {
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #d7dbe4;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn:hover {
+  opacity: 0.88;
+}
+
+.btn.primary {
+  background: #5468ff;
+  color: white;
+}
+
+.btn.secondary {
+  background: #eef0f7;
+  color: #333a47;
+}
+
+.result-card {
+  text-align: center;
+}
+
+.empty-state {
+  color: #8991a1;
+  padding: 40px 10px;
+  font-size: 0.95rem;
+}
+
+.qr-output canvas {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid #eceef4;
+  padding: 10px;
+  background: white;
+}
+
+.copy-msg {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #1a8a4c;
+}
+
+.app-footer {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #9aa1af;
+  margin-top: 10px;
+}
+
+@media (max-width: 420px) {
+  .options-row {
+    flex-direction: column;
+  }
+}
