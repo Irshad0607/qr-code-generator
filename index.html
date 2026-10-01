@@ -1,314 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0A0A0C" />
-  <title>QR Studio — Minimal QR Generator</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0A0A0C" />
+<title>QR Studio — Minimal QR Generator</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="app-shell">
+<div class="app-shell">
 
-    <aside class="sidebar" aria-label="Primary navigation">
-      <div class="brand-block">
+  <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+    <div class="brand-block">
+      <span class="brand-mark">QR</span>
+      <span class="brand-sub">Studio</span>
+    </div>
+
+    <nav class="nav-group" aria-label="Workspace">
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item active tooltip-container" type="button" data-view="generator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span class="nav-item-text">Generator</span>
+        <span class="tooltip-text">Generator</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-footer">QR Studio</div>
+
+    <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" type="button" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+      <span class="collapse-text">Collapse sidebar</span>
+    </button>
+  </aside>
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  <aside class="drawer" id="drawer" aria-label="Mobile navigation">
+    <div class="drawer-head">
+      <div class="brand-block" style="padding:0;">
         <span class="brand-mark">QR</span>
         <span class="brand-sub">Studio</span>
       </div>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close menu">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6L6 18"/>
+          <path d="M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
 
-      <nav class="nav-group" aria-label="Workspace">
-        <div class="nav-label">Workspace</div>
-        <button class="nav-item active" type="button" data-view="generator">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
+    <nav class="nav-group" aria-label="Workspace">
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item active" type="button" data-view="generator" data-drawer-nav>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Generator
+      </button>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-footer">QR Studio</div>
+  </aside>
+
+  <div class="main-area" id="main-area">
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" type="button" aria-label="Open menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/>
+            <path d="M3 12h18"/>
+            <path d="M3 18h18"/>
           </svg>
-          Generator
         </button>
-      </nav>
-
-      <div class="sidebar-spacer"></div>
-
-      <div class="sidebar-footer">QR Studio</div>
-    </aside>
-
-    <div class="drawer-backdrop" id="drawer-backdrop"></div>
-
-    <aside class="drawer" id="drawer" aria-label="Mobile navigation">
-      <div class="drawer-head">
-        <div class="brand-block" style="padding:0;">
-          <span class="brand-mark">QR</span>
-          <span class="brand-sub">Studio</span>
+        <div class="topbar-brand-mobile">
+          <span class="bm">QR</span>
+          <span class="bs">Studio</span>
         </div>
-        <button class="drawer-close" id="drawer-close" type="button" aria-label="Close menu">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 6L6 18"/>
-            <path d="M6 6l12 12"/>
-          </svg>
-        </button>
+      </div>
+      <div class="topbar-pill">
+        <span class="dot" aria-hidden="true"></span>
+        Instant
+      </div>
+    </header>
+
+    <main class="workspace">
+
+      <div class="view active" id="view-generator">
+
+        <div class="workspace-header">
+          <div class="eyebrow">QR Code Generator</div>
+          <h1 class="workspace-title">Turn any text or link into a QR code, instantly.</h1>
+          <p class="workspace-subtitle">
+            Simple, fast, and entirely in your browser.
+          </p>
+        </div>
+
+        <div class="dashboard-grid">
+
+          <section class="panel content-panel" aria-label="QR content generator">
+            <div class="panel-inner">
+
+              <div class="panel-head">
+                <div class="panel-head-left">
+                  <span class="panel-index">01</span>
+                  <span class="panel-title">Content</span>
+                </div>
+                <span class="panel-status" id="content-status">Ready</span>
+              </div>
+
+              <label class="field-label" for="qr-text">Text or URL</label>
+
+              <div class="textarea-shell">
+                <textarea
+                  id="qr-text"
+                  rows="4"
+                  maxlength="1000"
+                  placeholder="Type text, or paste a URL (e.g. https://example.com)"
+                  aria-describedby="textarea-meta"
+                ></textarea>
+              </div>
+
+              <div class="textarea-meta" id="textarea-meta">
+                <span class="textarea-hint">0 / 1000 characters</span>
+                <span class="char-count" id="char-count">0/1000</span>
+              </div>
+
+              <div class="error-box" id="error-msg" hidden role="alert"></div>
+
+              <div class="action-bar">
+                <button class="btn btn-secondary" id="clear-btn" type="button">Clear</button>
+                <button class="btn btn-primary" id="generate-btn" type="button">
+                  Generate QR Code
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"/>
+                    <path d="M13 6l6 6-6 6"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="keyboard-hint">
+                <kbd>CTRL</kbd> + <kbd>ENTER</kbd> to generate
+              </div>
+
+            </div>
+          </section>
+
+          <section class="panel preview-panel" aria-label="QR preview">
+            <div class="panel-inner">
+
+              <div class="panel-head">
+                <div class="panel-head-left">
+                  <span class="panel-index">02</span>
+                  <span class="panel-title">Preview</span>
+                </div>
+                <span class="panel-status" id="preview-status">Empty</span>
+              </div>
+
+              <div class="preview-stage">
+
+                <div class="empty-state" id="empty-state">
+                  <div class="qr-placeholder" aria-hidden="true">
+                    <span class="corner tl"></span>
+                    <span class="corner tr"></span>
+                    <span class="corner bl"></span>
+                    <span class="corner br"></span>
+                    <span class="placeholder-mark">QR</span>
+                  </div>
+                  <div class="empty-copy">
+                    <div class="empty-title">Your QR code will appear here.</div>
+                    <div class="empty-sub">Enter your content and generate a code.</div>
+                  </div>
+                </div>
+
+                <div class="loading-state" id="loading-state" aria-hidden="true">
+                  <div class="scan-loader">
+                    <div class="ring"></div>
+                    <div class="ring-active"></div>
+                    <div class="ring-inner"></div>
+                    <div class="center-dot"></div>
+                  </div>
+                  <div class="loading-copy">
+                    <div class="loading-title">Generating</div>
+                    <div class="loading-sub">Building your QR code</div>
+                  </div>
+                </div>
+
+                <div class="qr-result" id="qr-result" hidden>
+                  <div class="qr-frame-outer">
+                    <div class="qr-frame" id="qr-frame">
+                      <canvas id="qr-canvas" aria-label="Generated QR code"></canvas>
+                      <div class="qr-sweep" id="qr-sweep" aria-hidden="true"></div>
+                    </div>
+                  </div>
+
+                  <div class="qr-ready-label">
+                    <span class="dot" aria-hidden="true"></span>
+                    Ready to scan
+                  </div>
+
+                  <p class="qr-meta-text" id="qr-meta-text">
+                    QR code generated successfully.
+                  </p>
+
+                  <div class="qr-actions">
+                    <button class="btn btn-primary" id="copy-btn" type="button">Copy</button>
+                    <button class="btn btn-secondary" id="share-btn" type="button">Share</button>
+                    <button class="btn btn-secondary" id="download-btn" type="button">Download</button>
+                    <button class="btn btn-create" id="create-another-btn" type="button">Create another</button>
+                  </div>
+
+                  <div class="qr-feedback" id="copy-msg" aria-live="polite"></div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+        </div>
       </div>
 
-      <nav class="nav-group" aria-label="Workspace">
-        <div class="nav-label">Workspace</div>
-        <button class="nav-item active" type="button" data-view="generator" data-drawer-nav>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
-          </svg>
-          Generator
-        </button>
-      </nav>
-
-      <div class="sidebar-spacer"></div>
-
-      <div class="sidebar-footer">QR Studio</div>
-    </aside>
-
-    <div class="main-area">
-
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="hamburger" id="hamburger" type="button" aria-label="Open menu">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 6h18"/>
-              <path d="M3 12h18"/>
-              <path d="M3 18h18"/>
-            </svg>
-          </button>
-          <div class="topbar-brand-mobile">
-            <span class="bm">QR</span>
-            <span class="bs">Studio</span>
-          </div>
-        </div>
-        <div class="topbar-pill">
-          <span class="dot" aria-hidden="true"></span>
-          Instant
-        </div>
-      </header>
-
-      <main class="workspace">
-
-        <div class="view active" id="view-generator">
-
-          <div class="workspace-header">
-            <div class="eyebrow">QR Code Generator</div>
-            <h1 class="workspace-title">Turn any text or link into a QR code, instantly.</h1>
-            <p class="workspace-subtitle">
-              Simple, fast, and entirely in your browser.
-            </p>
-          </div>
-
-          <div class="dashboard-grid">
-
-            <section class="panel content-panel" aria-label="QR content generator">
-              <div class="panel-inner">
-
-                <div class="panel-head">
-                  <div class="panel-head-left">
-                    <span class="panel-index">01</span>
-                    <span class="panel-title">Content</span>
-                  </div>
-                  <span class="panel-status" id="content-status">Ready</span>
-                </div>
-
-                <label class="field-label" for="qr-text">Text or URL</label>
-
-                <div class="textarea-shell">
-                  <textarea
-                    id="qr-text"
-                    rows="4"
-                    maxlength="1000"
-                    placeholder="Type text, or paste a URL (e.g. https://example.com)"
-                    aria-describedby="textarea-meta"
-                  ></textarea>
-                </div>
-
-                <div class="textarea-meta" id="textarea-meta">
-                  <span class="textarea-hint">0 / 1000 characters</span>
-                  <span class="char-count" id="char-count">0/1000</span>
-                </div>
-
-                <button
-                  class="templates-toggle"
-                  id="templates-toggle"
-                  aria-expanded="false"
-                  aria-controls="templates-panel"
-                  type="button"
-                >
-                  <span class="templates-toggle-left">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="3" y="3" width="7" height="7" rx="1"/>
-                      <rect x="14" y="3" width="7" height="7" rx="1"/>
-                      <rect x="3" y="14" width="7" height="7" rx="1"/>
-                      <circle cx="17.5" cy="17.5" r="3.5"/>
-                    </svg>
-                    Templates
-                  </span>
-                  <span class="templates-toggle-right">
-                    <span class="templates-active-name" id="templates-active-name">Classic</span>
-                    <span class="templates-plus" aria-hidden="true">+</span>
-                  </span>
-                </button>
-
-                <div class="templates-panel" id="templates-panel" role="region" aria-label="QR templates">
-                  <div class="templates-grid" id="templates-grid"></div>
-
-                  <div class="templates-footer">
-                    <div class="size-control">
-                      <label for="qr-size">Size</label>
-                      <select id="qr-size">
-                        <option value="150">Small (150 × 150)</option>
-                        <option value="250" selected>Medium (250 × 250)</option>
-                        <option value="350">Large (350 × 350)</option>
-                        <option value="500">Extra Large (500 × 500)</option>
-                      </select>
-                    </div>
-                    <button class="advanced-toggle" id="advanced-toggle" aria-expanded="false" aria-controls="advanced-panel" type="button">
-                      Advanced
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 18l6-6-6-6"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div class="advanced-panel" id="advanced-panel" role="region" aria-label="Advanced color options">
-                    <div class="advanced-grid">
-                      <div class="advanced-field">
-                        <label for="fg-color">Foreground</label>
-                        <div class="color-row">
-                          <input type="color" id="fg-color" value="#000000" aria-label="Foreground color" />
-                          <span class="color-hex" id="fg-hex">#000000</span>
-                        </div>
-                      </div>
-                      <div class="advanced-field">
-                        <label for="bg-color">Background</label>
-                        <div class="color-row">
-                          <input type="color" id="bg-color" value="#ffffff" aria-label="Background color" />
-                          <span class="color-hex" id="bg-hex">#FFFFFF</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="error-box" id="error-msg" hidden role="alert"></div>
-
-                <div class="action-bar">
-                  <button class="btn btn-secondary" id="clear-btn" type="button">Clear</button>
-                  <button class="btn btn-primary" id="generate-btn" type="button">
-                    Generate QR Code
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M5 12h14"/>
-                      <path d="M13 6l6 6-6 6"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <div class="keyboard-hint">
-                  <kbd>CTRL</kbd> + <kbd>ENTER</kbd> to generate
-                </div>
-
-              </div>
-            </section>
-
-            <section class="panel preview-panel" aria-label="QR preview">
-              <div class="panel-inner">
-
-                <div class="panel-head">
-                  <div class="panel-head-left">
-                    <span class="panel-index">02</span>
-                    <span class="panel-title">Preview</span>
-                  </div>
-                  <span class="panel-status" id="preview-status">Empty</span>
-                </div>
-
-                <div class="preview-stage">
-
-                  <div class="empty-state" id="empty-state">
-                    <div class="qr-placeholder" aria-hidden="true">
-                      <span class="corner tl"></span>
-                      <span class="corner tr"></span>
-                      <span class="corner bl"></span>
-                      <span class="corner br"></span>
-                      <span class="placeholder-mark">QR</span>
-                    </div>
-                    <div class="empty-copy">
-                      <div class="empty-title">Your QR code will appear here.</div>
-                      <div class="empty-sub">Enter your content and generate a code.</div>
-                    </div>
-                  </div>
-
-                  <div class="loading-state" id="loading-state" aria-hidden="true">
-                    <div class="scan-loader">
-                      <div class="ring"></div>
-                      <div class="ring-active"></div>
-                      <div class="ring-inner"></div>
-                      <div class="center-dot"></div>
-                    </div>
-                    <div class="loading-copy">
-                      <div class="loading-title">Generating</div>
-                      <div class="loading-sub">Building your QR code</div>
-                    </div>
-                  </div>
-
-                  <div class="qr-result" id="qr-result" hidden>
-                    <div class="qr-frame-outer">
-                      <div class="qr-frame" id="qr-frame">
-                        <canvas id="qr-canvas" aria-label="Generated QR code"></canvas>
-                        <div class="qr-recolor-buffer" id="qr-recolor-buffer" aria-hidden="true">
-                          <div class="qr-recolor-ring">
-                            <div class="rr-outer"></div>
-                            <div class="rr-active"></div>
-                            <div class="rr-inner"></div>
-                            <div class="rr-dot"></div>
-                          </div>
-                        </div>
-                        <div class="qr-sweep" id="qr-sweep" aria-hidden="true"></div>
-                      </div>
-                    </div>
-
-                    <div class="qr-ready-label">
-                      <span class="dot" aria-hidden="true"></span>
-                      Ready to scan
-                    </div>
-
-                    <p class="qr-meta-text" id="qr-meta-text">
-                      QR code generated successfully.
-                    </p>
-
-                    <div class="qr-actions">
-                      <button class="btn btn-primary" id="download-btn" type="button">Download PNG</button>
-                      <button class="btn btn-secondary" id="copy-btn" type="button">Copy Image</button>
-                    </div>
-
-                    <div class="qr-feedback" id="copy-msg" aria-live="polite"></div>
-
-                    <button class="create-another" id="create-another-btn" type="button">
-                      Create another
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M7 17L17 7"/>
-                        <path d="M7 7h10v10"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-            </section>
-
-          </div>
-        </div>
-
-      </main>
-    </div>
+    </main>
   </div>
+</div>
 
-  <script src="vendor/qrcode.min.js"></script>
-  <script src="script.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
