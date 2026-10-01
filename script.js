@@ -1,86 +1,51 @@
 (function () {
   "use strict";
 
-  const MAX_CHARS = 1000;
+  var MAX_CHARS = 1000;
+  var QR_OUTPUT_SIZE = 500;
 
-  const TEMPLATES = [
-    { id: "classic",   name: "Classic",   fg: "#000000", bg: "#FFFFFF", size: 250 },
-    { id: "slate",     name: "Slate",     fg: "#4A5260", bg: "#F2F2F0", size: 250 },
-    { id: "mono",      name: "Mono",      fg: "#F4F4F5", bg: "#0A0B0D", size: 250 },
-    { id: "paper",     name: "Paper",     fg: "#3B2E22", bg: "#F5EFE4", size: 250 },
-    { id: "terminal",  name: "Terminal",  fg: "#7A9B7A", bg: "#0B0F0B", size: 250 },
-    { id: "midnight",  name: "Midnight",  fg: "#C8CCD4", bg: "#111318", size: 250 },
-    { id: "linen",     name: "Linen",     fg: "#5C4A3A", bg: "#F7F3EC", size: 250 },
-    { id: "ivory",     name: "Ivory",     fg: "#2A2A2A", bg: "#FAF8F2", size: 250 },
-    { id: "concrete",  name: "Concrete",  fg: "#33363B", bg: "#D9DBDF", size: 250 },
-    { id: "obsidian",  name: "Obsidian",  fg: "#E8E8EA", bg: "#0F1013", size: 250 },
-    { id: "amber",     name: "Amber",     fg: "#4A3A1E", bg: "#F4EAD3", size: 250 },
-    { id: "sage",      name: "Sage",      fg: "#3D4A3D", bg: "#E8EDE5", size: 250 },
-    { id: "cobalt",    name: "Cobalt",    fg: "#1E2A44", bg: "#EDF0F6", size: 250 },
-    { id: "crimson",   name: "Crimson",   fg: "#5A1F26", bg: "#F5EDEE", size: 250 },
-    { id: "violet",    name: "Violet",    fg: "#3A2A4D", bg: "#F1ECF6", size: 250 }
-  ];
+  var $ = function (id) { return document.getElementById(id); };
 
-  const $ = (id) => document.getElementById(id);
+  var textInput         = $("qr-text");
+  var charCount         = $("char-count");
+  var errorMsg          = $("error-msg");
+  var generateBtn       = $("generate-btn");
+  var clearBtn          = $("clear-btn");
+  var emptyState        = $("empty-state");
+  var loadingState      = $("loading-state");
+  var qrResult          = $("qr-result");
+  var canvas            = $("qr-canvas");
+  var qrSweep           = $("qr-sweep");
+  var copyBtn           = $("copy-btn");
+  var shareBtn          = $("share-btn");
+  var downloadBtn       = $("download-btn");
+  var copyMsg           = $("copy-msg");
+  var qrMetaText        = $("qr-meta-text");
+  var previewStatus     = $("preview-status");
+  var contentStatus     = $("content-status");
+  var createAnotherBtn  = $("create-another-btn");
+  var viewGenerator     = $("view-generator");
 
-  const textInput         = $("qr-text");
-  const charCount         = $("char-count");
-  const errorMsg          = $("error-msg");
-  const sizeSelect        = $("qr-size");
-  const fgColor           = $("fg-color");
-  const bgColor           = $("bg-color");
-  const fgHex             = $("fg-hex");
-  const bgHex             = $("bg-hex");
-  const generateBtn       = $("generate-btn");
-  const clearBtn          = $("clear-btn");
-  const emptyState        = $("empty-state");
-  const loadingState      = $("loading-state");
-  const qrResult          = $("qr-result");
-  const canvas            = $("qr-canvas");
-  const qrFrame           = $("qr-frame");
-  const qrSweep           = $("qr-sweep");
-  const qrRecolorBuffer   = $("qr-recolor-buffer");
-  const downloadBtn       = $("download-btn");
-  const copyBtn           = $("copy-btn");
-  const copyMsg           = $("copy-msg");
-  const qrMetaText        = $("qr-meta-text");
-  const previewStatus     = $("preview-status");
-  const contentStatus     = $("content-status");
-  const templatesToggle   = $("templates-toggle");
-  const templatesPanel    = $("templates-panel");
-  const templatesGrid     = $("templates-grid");
-  const templatesActive   = $("templates-active-name");
-  const advancedToggle    = $("advanced-toggle");
-  const advancedPanel     = $("advanced-panel");
-  const createAnotherBtn  = $("create-another-btn");
-  const viewGenerator     = $("view-generator");
+  var sidebar           = $("sidebar");
+  var sidebarCollapse   = $("sidebar-collapse-btn");
+  var mainArea          = $("main-area");
+  var hamburger         = $("hamburger");
+  var drawer            = $("drawer");
+  var drawerClose       = $("drawer-close");
+  var drawerBackdrop    = $("drawer-backdrop");
 
-  const hamburger         = $("hamburger");
-  const drawer            = $("drawer");
-  const drawerClose       = $("drawer-close");
-  const drawerBackdrop    = $("drawer-backdrop");
-
-  const allNavItems = document.querySelectorAll("[data-view]");
-
-  let isGenerating = false;
-  let isRecoloring = false;
-  let activeTemplate = TEMPLATES[0];
-  let timers = [];
-  let lastGeneratedValue = null;
-  let recolorTimer = null;
-  let recolorCooldown = 0;
+  var allNavItems = document.querySelectorAll("[data-view]");
+  var isGenerating = false;
+  var timers = [];
+  var lastGeneratedValue = null;
 
   function clearTimers() {
-    timers.forEach((t) => clearTimeout(t));
+    timers.forEach(function (t) { clearTimeout(t); });
     timers = [];
-    if (recolorTimer) {
-      clearTimeout(recolorTimer);
-      recolorTimer = null;
-    }
   }
 
   function setTimer(fn, ms) {
-    const id = setTimeout(fn, ms);
+    var id = setTimeout(fn, ms);
     timers.push(id);
     return id;
   }
@@ -98,144 +63,8 @@
     return str.length > n ? str.slice(0, n) + "…" : str;
   }
 
-  function buildSwatch(tpl) {
-    const pattern = [
-      1,1,1,0,1,
-      1,0,1,0,1,
-      0,0,0,1,0,
-      1,0,1,1,0,
-      1,1,0,0,1
-    ];
-    let html = '<div class="template-swatch" style="background:' + tpl.bg + ';">';
-    for (let i = 0; i < 25; i++) {
-      html += '<span style="background:' + (pattern[i] ? tpl.fg : tpl.bg) + ';"></span>';
-    }
-    html += '</div>';
-    return html;
-  }
-
-  function renderTemplates() {
-    templatesGrid.innerHTML = TEMPLATES.map(function (tpl) {
-      const active = tpl.id === activeTemplate.id;
-      return (
-        '<button type="button" class="template-card' + (active ? " active" : "") + '" data-template="' + tpl.id + '" aria-pressed="' + active + '">' +
-          '<span class="template-check" aria-hidden="true">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>' +
-          '</span>' +
-          buildSwatch(tpl) +
-          '<span class="template-name">' + escapeHtml(tpl.name) + '</span>' +
-        '</button>'
-      );
-    }).join("");
-
-    templatesGrid.querySelectorAll(".template-card").forEach(function (card) {
-      card.addEventListener("click", function () {
-        applyTemplate(card.getAttribute("data-template"));
-      });
-    });
-  }
-
-  function applyTemplate(id) {
-    const tpl = TEMPLATES.find((t) => t.id === id);
-    if (!tpl) return;
-    activeTemplate = tpl;
-
-    templatesGrid.querySelectorAll(".template-card").forEach(function (card) {
-      const isActive = card.getAttribute("data-template") === id;
-      card.classList.toggle("active", isActive);
-      card.setAttribute("aria-pressed", String(isActive));
-    });
-
-    templatesActive.textContent = tpl.name;
-    fgColor.value = tpl.fg;
-    bgColor.value = tpl.bg;
-    fgHex.textContent = tpl.fg.toUpperCase();
-    bgHex.textContent = tpl.bg.toUpperCase();
-    sizeSelect.value = String(tpl.size);
-
-    if (lastGeneratedValue && !qrResult.hidden && !isGenerating) {
-      scheduleRecolor();
-    }
-  }
-
-  function scheduleRecolor() {
-    if (!lastGeneratedValue) return;
-
-    const now = Date.now();
-    if (now < recolorCooldown) {
-      clearTimeout(recolorTimer);
-      recolorTimer = setTimeout(scheduleRecolor, recolorCooldown - now);
-      return;
-    }
-    recolorCooldown = now + 400;
-
-    clearTimeout(recolorTimer);
-    recolorTimer = setTimeout(function () {
-      runRecolor();
-    }, 30);
-  }
-
-  function runRecolor() {
-    if (isRecoloring || !lastGeneratedValue) return;
-    isRecoloring = true;
-
-    const size = parseInt(sizeSelect.value, 10);
-    const fg = fgColor.value;
-    const bg = bgColor.value;
-
-    qrRecolorBuffer.classList.add("active");
-
-    setTimer(function () {
-      QRCode.toCanvas(
-        canvas,
-        lastGeneratedValue,
-        {
-          width: size,
-          margin: 2,
-          color: { dark: fg, light: bg },
-        },
-        function (err) {
-          if (err) {
-            qrRecolorBuffer.classList.remove("active");
-            isRecoloring = false;
-            return;
-          }
-
-          qrFrame.style.background = bg;
-
-          qrResult.classList.remove("qr-reveal");
-          canvas.classList.remove("qr-reveal");
-          qrSweep.classList.remove("run");
-          void qrResult.offsetWidth;
-
-          qrResult.classList.add("qr-reveal");
-          canvas.classList.add("qr-reveal");
-          qrSweep.classList.add("run");
-
-          qrRecolorBuffer.classList.remove("active");
-          isRecoloring = false;
-        }
-      );
-    }, 280);
-  }
-
-  function toggleAccordion(toggleEl, panelEl) {
-    const expanded = toggleEl.getAttribute("aria-expanded") === "true";
-    const next = !expanded;
-    toggleEl.setAttribute("aria-expanded", String(next));
-    panelEl.classList.toggle("open", next);
-  }
-
-  templatesToggle.addEventListener("click", function () {
-    toggleAccordion(templatesToggle, templatesPanel);
-  });
-
-  advancedToggle.addEventListener("click", function () {
-    toggleAccordion(advancedToggle, advancedPanel);
-  });
-
   function updateCharCount() {
-    const len = textInput.value.length;
+    var len = textInput.value.length;
     charCount.textContent = len + "/" + MAX_CHARS;
     charCount.classList.toggle("near-limit", len >= MAX_CHARS * 0.9);
   }
@@ -244,20 +73,7 @@
     updateCharCount();
     if (textInput.value.trim().length > 0) {
       contentStatus.textContent = "Ready";
-    }
-  });
-
-  fgColor.addEventListener("input", function () {
-    fgHex.textContent = fgColor.value.toUpperCase();
-    if (lastGeneratedValue && !qrResult.hidden && !isGenerating) {
-      scheduleRecolor();
-    }
-  });
-
-  bgColor.addEventListener("input", function () {
-    bgHex.textContent = bgColor.value.toUpperCase();
-    if (lastGeneratedValue && !qrResult.hidden && !isGenerating) {
-      scheduleRecolor();
+      contentStatus.classList.remove("is-ready");
     }
   });
 
@@ -296,7 +112,6 @@
     qrResult.classList.remove("qr-reveal");
     canvas.classList.remove("qr-reveal");
     qrSweep.classList.remove("run");
-    qrRecolorBuffer.classList.remove("active");
   }
 
   function switchView(view) {
@@ -336,6 +151,44 @@
     }
   });
 
+  function isDesktop() {
+    return window.innerWidth > 880;
+  }
+
+  function toggleSidebar() {
+    if (!isDesktop()) return;
+    sidebar.classList.toggle("collapsed");
+    var collapsed = sidebar.classList.contains("collapsed");
+    try {
+      localStorage.setItem("qr-studio-sidebar-collapsed", collapsed ? "true" : "false");
+    } catch (e) {}
+  }
+
+  sidebarCollapse.addEventListener("click", toggleSidebar);
+
+  function restoreSidebarState() {
+    if (!isDesktop()) return;
+    try {
+      var stored = localStorage.getItem("qr-studio-sidebar-collapsed");
+      if (stored === "true") {
+        sidebar.classList.add("collapsed");
+      } else {
+        sidebar.classList.remove("collapsed");
+      }
+    } catch (e) {}
+  }
+
+  function applySidebarForViewport() {
+    if (isDesktop()) {
+      restoreSidebarState();
+    } else {
+      sidebar.classList.remove("collapsed");
+      closeDrawer();
+    }
+  }
+
+  window.addEventListener("resize", applySidebarForViewport);
+
   function generateQR() {
     if (isGenerating) return;
 
@@ -343,7 +196,7 @@
     copyMsg.textContent = "";
     copyMsg.className = "qr-feedback";
 
-    const value = textInput.value.trim();
+    var value = textInput.value.trim();
 
     if (!value) {
       showError("Please enter some text or a URL first.");
@@ -367,18 +220,14 @@
 
     setPreviewState("loading");
 
-    const size = parseInt(sizeSelect.value, 10);
-    const fg = fgColor.value;
-    const bg = bgColor.value;
-
     setTimer(function () {
       QRCode.toCanvas(
         canvas,
         value,
         {
-          width: size,
+          width: QR_OUTPUT_SIZE,
           margin: 2,
-          color: { dark: fg, light: bg },
+          color: { dark: "#000000", light: "#FFFFFF" }
         },
         function (err) {
           if (err) {
@@ -395,9 +244,7 @@
 
           setPreviewState("result");
 
-          qrFrame.style.background = bg;
-
-          const display = truncate(value, 44);
+          var display = truncate(value, 44);
           qrMetaText.innerHTML =
             '<span class="meta-strong">' + escapeHtml(display) + "</span><br>QR code generated successfully.";
 
@@ -428,7 +275,6 @@
   function clearAll() {
     clearTimers();
     isGenerating = false;
-    isRecoloring = false;
     lastGeneratedValue = null;
 
     textInput.value = "";
@@ -454,7 +300,6 @@
   function createAnother() {
     clearTimers();
     isGenerating = false;
-    isRecoloring = false;
 
     copyMsg.textContent = "";
     copyMsg.className = "qr-feedback";
@@ -476,7 +321,7 @@
   function downloadQR() {
     if (!canvas || canvas.width === 0) return;
     try {
-      const link = document.createElement("a");
+      var link = document.createElement("a");
       link.download = "qr-code.png";
       link.href = canvas.toDataURL("image/png");
       document.body.appendChild(link);
@@ -504,16 +349,16 @@
     copyMsg.className = "qr-feedback";
 
     try {
-      const blob = await new Promise(function (resolve) {
+      var blob = await new Promise(function (resolve) {
         canvas.toBlob(resolve, "image/png");
       });
       if (!blob) throw new Error("Blob failed");
 
       await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
+        new ClipboardItem({ "image/png": blob })
       ]);
 
-      const originalText = copyBtn.textContent;
+      var originalText = copyBtn.textContent;
       copyBtn.textContent = "Copied";
       copyBtn.disabled = true;
 
@@ -534,10 +379,71 @@
     }
   }
 
+  async function shareQR() {
+    if (!canvas || canvas.width === 0) return;
+
+    copyMsg.textContent = "";
+    copyMsg.className = "qr-feedback";
+
+    if (!navigator.share) {
+      copyMsg.textContent = "Sharing isn't supported here.";
+      copyMsg.className = "qr-feedback error";
+      setTimer(function () {
+        if (copyMsg.textContent === "Sharing isn't supported here.") {
+          copyMsg.textContent = "";
+          copyMsg.className = "qr-feedback";
+        }
+      }, 2500);
+      return;
+    }
+
+    try {
+      var blob = await new Promise(function (resolve) {
+        canvas.toBlob(resolve, "image/png");
+      });
+
+      if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], "qr-code.png", { type: "image/png" })] })) {
+        var file = new File([blob], "qr-code.png", { type: "image/png" });
+        await navigator.share({
+          title: "QR Code",
+          text: lastGeneratedValue || "Scan this QR code",
+          files: [file]
+        });
+      } else {
+        await navigator.share({
+          title: "QR Code",
+          text: lastGeneratedValue || "Scan this QR code",
+          url: lastGeneratedValue && (lastGeneratedValue.startsWith("http://") || lastGeneratedValue.startsWith("https://")) ? lastGeneratedValue : undefined
+        });
+      }
+
+      copyMsg.textContent = "Shared successfully";
+      copyMsg.className = "qr-feedback success";
+      setTimer(function () {
+        if (copyMsg.textContent === "Shared successfully") {
+          copyMsg.textContent = "";
+          copyMsg.className = "qr-feedback";
+        }
+      }, 2000);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        copyMsg.textContent = "Sharing isn't supported here.";
+        copyMsg.className = "qr-feedback error";
+        setTimer(function () {
+          if (copyMsg.textContent === "Sharing isn't supported here.") {
+            copyMsg.textContent = "";
+            copyMsg.className = "qr-feedback";
+          }
+        }, 2500);
+      }
+    }
+  }
+
   generateBtn.addEventListener("click", generateQR);
   clearBtn.addEventListener("click", clearAll);
   downloadBtn.addEventListener("click", downloadQR);
   copyBtn.addEventListener("click", copyQR);
+  shareBtn.addEventListener("click", shareQR);
   createAnotherBtn.addEventListener("click", createAnother);
 
   textInput.addEventListener("keydown", function (e) {
@@ -547,16 +453,9 @@
     }
   });
 
-  sizeSelect.addEventListener("change", function () {
-    if (lastGeneratedValue && !qrResult.hidden && !isGenerating) {
-      scheduleRecolor();
-    }
-  });
-
-  renderTemplates();
-  applyTemplate(activeTemplate.id);
   updateCharCount();
   setPreviewState("empty");
+  applySidebarForViewport();
 
   if (window.innerWidth > 880) {
     textInput.focus();
