@@ -1,463 +1,466 @@
-(function () {
-  "use strict";
+"use strict";
 
-  var MAX_CHARS = 1000;
-  var QR_OUTPUT_SIZE = 500;
+(() => {
+  const MAX_CHARS = 1000;
+  const QR_SIZE = 600;
+  const QR_MARGIN = 2;
+  const DEFAULT_MESSAGE = "QR code generated successfully.";
+  const STORAGE_KEY = "qr-studio-sidebar-collapsed";
+  const INTRO_KEY = "qr-studio-intro-shown";
+  const GENERATE_DELAY = 600;
+  const INTRO_MIN_DURATION = 3000;
+  const INTRO_FADE = 600;
 
-  var $ = function (id) { return document.getElementById(id); };
+  const $ = (id) => document.getElementById(id);
 
-  var textInput         = $("qr-text");
-  var charCount         = $("char-count");
-  var errorMsg          = $("error-msg");
-  var generateBtn       = $("generate-btn");
-  var clearBtn          = $("clear-btn");
-  var emptyState        = $("empty-state");
-  var loadingState      = $("loading-state");
-  var qrResult          = $("qr-result");
-  var canvas            = $("qr-canvas");
-  var qrSweep           = $("qr-sweep");
-  var copyBtn           = $("copy-btn");
-  var shareBtn          = $("share-btn");
-  var downloadBtn       = $("download-btn");
-  var copyMsg           = $("copy-msg");
-  var qrMetaText        = $("qr-meta-text");
-  var previewStatus     = $("preview-status");
-  var contentStatus     = $("content-status");
-  var createAnotherBtn  = $("create-another-btn");
-  var viewGenerator     = $("view-generator");
+  const shell = $("app-shell");
+  const textInput = $("qr-text");
+  const charCount = $("char-count");
+  const errorMsg = $("error-msg");
+  const generateBtn = $("generate-btn");
+  const generateLabel = $("generate-label");
+  const generateIcon = $("generate-icon");
+  const clearBtn = $("clear-btn");
+  const emptyState = $("empty-state");
+  const loadingState = $("loading-state");
+  const qrResult = $("qr-result");
+  const canvas = $("qr-canvas");
+  const frameOuter = $("qr-frame-outer");
+  const qrSweep = $("qr-sweep");
+  const qrMessage = $("qr-message");
+  const viewGenerator = $("view-generator");
+  const contentPanel = $("content-panel");
+  const previewPanel = $("preview-panel");
+  const copyBtn = $("copy-btn");
+  const shareBtn = $("share-btn");
+  const downloadBtn = $("download-btn");
+  const createAnotherBtn = $("create-another-btn");
+  const previewStatus = $("preview-status");
+  const contentStatus = $("content-status");
+  const collapseBtn = $("collapse-btn");
+  const collapseLabel = $("collapse-label");
+  const hamburger = $("hamburger");
+  const drawer = $("drawer");
+  const drawerClose = $("drawer-close");
+  const drawerBackdrop = $("drawer-backdrop");
+  const mobileIntro = $("mobile-intro");
+  const navItems = document.querySelectorAll("[data-view]");
 
-  var sidebar           = $("sidebar");
-  var sidebarCollapse   = $("sidebar-collapse-btn");
-  var mainArea          = $("main-area");
-  var hamburger         = $("hamburger");
-  var drawer            = $("drawer");
-  var drawerClose       = $("drawer-close");
-  var drawerBackdrop    = $("drawer-backdrop");
+  let isGenerating = false;
+  let generateTimer = null;
+  let flashTimer = null;
+  let introTimer = null;
+  let introFadeTimer = null;
+  let introDismissed = false;
 
-  var allNavItems = document.querySelectorAll("[data-view]");
-  var isGenerating = false;
-  var timers = [];
-  var lastGeneratedValue = null;
+  const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  function clearTimers() {
-    timers.forEach(function (t) { clearTimeout(t); });
-    timers = [];
-  }
-
-  function setTimer(fn, ms) {
-    var id = setTimeout(fn, ms);
-    timers.push(id);
-    return id;
-  }
-
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function truncate(str, n) {
-    return str.length > n ? str.slice(0, n) + "…" : str;
-  }
-
-  function updateCharCount() {
-    var len = textInput.value.length;
-    charCount.textContent = len + "/" + MAX_CHARS;
-    charCount.classList.toggle("near-limit", len >= MAX_CHARS * 0.9);
-  }
-
-  textInput.addEventListener("input", function () {
-    updateCharCount();
-    if (textInput.value.trim().length > 0) {
-      contentStatus.textContent = "Ready";
-      contentStatus.classList.remove("is-ready");
+  const safeStorageGet = (storage, key) => {
+    try {
+      return storage.getItem(key);
+    } catch {
+      return null;
     }
-  });
+  };
 
-  function showError(message) {
+  const safeStorageSet = (storage, key, value) => {
+    try {
+      storage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const setStatus = (el, text, cls) => {
+    el.textContent = text;
+    el.classList.toggle("is-ready", cls === "ready");
+    el.classList.toggle("is-error", cls === "error");
+  };
+
+  const setGenerateIdle = () => {
+    generateBtn.disabled = false;
+    generateLabel.textContent = "Generate QR";
+    generateIcon.classList.remove("spin");
+    generateIcon.innerHTML = '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>';
+  };
+
+  const setGenerateBusy = () => {
+    generateBtn.disabled = true;
+    generateLabel.textContent = "Generating";
+    generateIcon.classList.add("spin");
+    generateIcon.innerHTML =
+      '<circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/>';
+  };
+
+  const updateCharCount = () => {
+    const len = textInput.value.length;
+    charCount.textContent = `${len} / ${MAX_CHARS}`;
+    charCount.classList.toggle("near-limit", len >= MAX_CHARS * 0.9);
+  };
+
+  const showError = (message) => {
     errorMsg.textContent = message;
     errorMsg.hidden = false;
-    contentStatus.textContent = "Error";
-    contentStatus.classList.remove("is-ready");
-  }
+    setStatus(contentStatus, "Error", "error");
+  };
 
-  function clearError() {
+  const clearError = () => {
     errorMsg.hidden = true;
     errorMsg.textContent = "";
-  }
+  };
 
-  function setPreviewState(state) {
-    emptyState.style.display = state === "empty" ? "" : "none";
+  const flash = (message, kind) => {
+    clearTimeout(flashTimer);
+    qrMessage.textContent = message;
+    qrMessage.className = `qr-message ${kind}`;
+    flashTimer = setTimeout(() => {
+      qrMessage.textContent = DEFAULT_MESSAGE;
+      qrMessage.className = "qr-message";
+    }, 2400);
+  };
+
+  const resetFeedback = () => {
+    clearTimeout(flashTimer);
+    qrMessage.textContent = DEFAULT_MESSAGE;
+    qrMessage.className = "qr-message";
+  };
+
+  const setPreviewState = (state) => {
+    emptyState.hidden = state !== "empty";
     loadingState.classList.toggle("active", state === "loading");
-    loadingState.setAttribute("aria-hidden", state !== "loading" ? "true" : "false");
+    loadingState.setAttribute("aria-hidden", state === "loading" ? "false" : "true");
     qrResult.hidden = state !== "result";
 
-    if (state === "empty") {
-      previewStatus.textContent = "Empty";
-      previewStatus.classList.remove("is-ready");
-    } else if (state === "loading") {
-      previewStatus.textContent = "Working";
-      previewStatus.classList.remove("is-ready");
-    } else {
-      previewStatus.textContent = "Ready";
-      previewStatus.classList.add("is-ready");
-    }
-  }
+    if (state === "empty") setStatus(previewStatus, "Empty");
+    else if (state === "loading") setStatus(previewStatus, "Working");
+    else setStatus(previewStatus, "Ready", "ready");
+  };
 
-  function resetPreview() {
-    setPreviewState("empty");
-    qrResult.classList.remove("qr-reveal");
-    canvas.classList.remove("qr-reveal");
+  const playReveal = () => {
+    frameOuter.classList.remove("qr-reveal");
     qrSweep.classList.remove("run");
-  }
+    void frameOuter.offsetWidth;
+    frameOuter.classList.add("qr-reveal");
+    qrSweep.classList.add("run");
+  };
 
-  function switchView(view) {
-    if (view === "generator") {
-      viewGenerator.classList.add("active");
-    }
-    allNavItems.forEach(function (el) {
-      el.classList.toggle("active", el.getAttribute("data-view") === view);
-    });
-  }
+  const resetPreview = () => {
+    frameOuter.classList.remove("qr-reveal");
+    qrSweep.classList.remove("run");
+    setPreviewState("empty");
+    resetFeedback();
+  };
 
-  allNavItems.forEach(function (el) {
-    el.addEventListener("click", function () {
-      switchView(el.getAttribute("data-view"));
-      closeDrawer();
-    });
-  });
+  const showResult = () => {
+    isGenerating = false;
+    setGenerateIdle();
+    contentPanel.hidden = true;
+    contentPanel.classList.remove("is-leaving");
+    viewGenerator.classList.add("is-result");
+    setPreviewState("result");
+    previewPanel.classList.remove("is-entering");
+    void previewPanel.offsetWidth;
+    previewPanel.classList.add("is-entering");
+    playReveal();
+  };
 
-  function openDrawer() {
-    drawer.classList.add("open");
-    drawerBackdrop.classList.add("open");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeDrawer() {
-    drawer.classList.remove("open");
-    drawerBackdrop.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
-  hamburger.addEventListener("click", openDrawer);
-  drawerClose.addEventListener("click", closeDrawer);
-  drawerBackdrop.addEventListener("click", closeDrawer);
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && drawer.classList.contains("open")) {
-      closeDrawer();
-    }
-  });
-
-  function isDesktop() {
-    return window.innerWidth > 880;
-  }
-
-  function toggleSidebar() {
-    if (!isDesktop()) return;
-    sidebar.classList.toggle("collapsed");
-    var collapsed = sidebar.classList.contains("collapsed");
-    try {
-      localStorage.setItem("qr-studio-sidebar-collapsed", collapsed ? "true" : "false");
-    } catch (e) {}
-  }
-
-  sidebarCollapse.addEventListener("click", toggleSidebar);
-
-  function restoreSidebarState() {
-    if (!isDesktop()) return;
-    try {
-      var stored = localStorage.getItem("qr-studio-sidebar-collapsed");
-      if (stored === "true") {
-        sidebar.classList.add("collapsed");
-      } else {
-        sidebar.classList.remove("collapsed");
-      }
-    } catch (e) {}
-  }
-
-  function applySidebarForViewport() {
-    if (isDesktop()) {
-      restoreSidebarState();
-    } else {
-      sidebar.classList.remove("collapsed");
-      closeDrawer();
-    }
-  }
-
-  window.addEventListener("resize", applySidebarForViewport);
-
-  function generateQR() {
+  const generateQR = () => {
     if (isGenerating) return;
-
     clearError();
-    copyMsg.textContent = "";
-    copyMsg.className = "qr-feedback";
 
-    var value = textInput.value.trim();
+    const value = textInput.value.trim();
 
     if (!value) {
       showError("Please enter some text or a URL first.");
       textInput.focus();
       return;
     }
-
     if (value.length > MAX_CHARS) {
-      showError("Text is too long. Maximum is " + MAX_CHARS + " characters.");
+      showError(`Text is too long. Maximum is ${MAX_CHARS} characters.`);
+      return;
+    }
+    if (typeof QRCode === "undefined" || typeof QRCode.toCanvas !== "function") {
+      showError("QR library failed to load. Please refresh the page.");
       return;
     }
 
     isGenerating = true;
-    generateBtn.disabled = true;
-    generateBtn.innerHTML =
-      "Generating" +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>';
-
-    contentStatus.textContent = "Working";
-    contentStatus.classList.remove("is-ready");
-
+    setGenerateBusy();
+    setStatus(contentStatus, "Working");
     setPreviewState("loading");
+    resetFeedback();
 
-    setTimer(function () {
+    if (window.innerWidth < 1024) {
+      previewPanel.scrollIntoView({
+        behavior: reducedMotionQuery.matches ? "auto" : "smooth",
+        block: "center",
+      });
+    }
+
+    generateTimer = setTimeout(() => {
       QRCode.toCanvas(
         canvas,
         value,
-        {
-          width: QR_OUTPUT_SIZE,
-          margin: 2,
-          color: { dark: "#000000", light: "#FFFFFF" }
-        },
-        function (err) {
+        { width: QR_SIZE, margin: QR_MARGIN, color: { dark: "#000000", light: "#FFFFFF" } },
+        (err) => {
+          canvas.style.removeProperty("width");
+          canvas.style.removeProperty("height");
+
           if (err) {
+            isGenerating = false;
+            setGenerateIdle();
             showError("Unable to generate QR code. Please check your input and try again.");
             setPreviewState("empty");
-            isGenerating = false;
-            generateBtn.disabled = false;
-            generateBtn.innerHTML =
-              "Generate QR" +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>';
-            contentStatus.textContent = "Ready";
             return;
           }
 
-          setPreviewState("result");
-
-          var display = truncate(value, 44);
-          qrMetaText.innerHTML =
-            '<span class="meta-strong">' + escapeHtml(display) + "</span><br>QR code generated successfully.";
-
-          qrResult.classList.remove("qr-reveal");
-          canvas.classList.remove("qr-reveal");
-          qrSweep.classList.remove("run");
-          void qrResult.offsetWidth;
-
-          qrResult.classList.add("qr-reveal");
-          canvas.classList.add("qr-reveal");
-          qrSweep.classList.add("run");
-
-          isGenerating = false;
-          generateBtn.disabled = false;
-          generateBtn.innerHTML =
-            "Generate QR" +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>';
-
-          contentStatus.textContent = "Ready";
-          contentStatus.classList.add("is-ready");
-
-          lastGeneratedValue = value;
+          contentPanel.classList.add("is-leaving");
+          generateTimer = setTimeout(showResult, 180);
         }
       );
-    }, 850);
-  }
+    }, GENERATE_DELAY);
+  };
 
-  function clearAll() {
-    clearTimers();
+  const showInput = () => {
+    clearTimeout(generateTimer);
     isGenerating = false;
-    lastGeneratedValue = null;
+    viewGenerator.classList.remove("is-result");
+    previewPanel.classList.remove("is-entering");
+    contentPanel.classList.remove("is-leaving");
+    contentPanel.hidden = false;
+    contentPanel.classList.remove("is-entering");
+    void contentPanel.offsetWidth;
+    contentPanel.classList.add("is-entering");
+    clearError();
+    resetPreview();
+    setStatus(contentStatus, "Ready");
+    setGenerateIdle();
+  };
 
+  const clearAll = () => {
     textInput.value = "";
     updateCharCount();
-    clearError();
-
-    copyMsg.textContent = "";
-    copyMsg.className = "qr-feedback";
-
-    resetPreview();
-
-    contentStatus.textContent = "Ready";
-    contentStatus.classList.remove("is-ready");
-
-    generateBtn.disabled = false;
-    generateBtn.innerHTML =
-      "Generate QR" +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>';
-
+    showInput();
     textInput.focus();
-  }
+  };
 
-  function createAnother() {
-    clearTimers();
-    isGenerating = false;
-
-    copyMsg.textContent = "";
-    copyMsg.className = "qr-feedback";
-
-    resetPreview();
-
+  const createAnother = () => {
+    showInput();
     textInput.focus();
     textInput.select();
+  };
 
-    contentStatus.textContent = "Ready";
-    contentStatus.classList.remove("is-ready");
+  const canvasToBlob = () =>
+    new Promise((resolve) => {
+      if (!canvas.width || !canvas.height) {
+        resolve(null);
+        return;
+      }
+      canvas.toBlob(resolve, "image/png");
+    });
 
-    generateBtn.disabled = false;
-    generateBtn.innerHTML =
-      "Generate QR" +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>';
-  }
-
-  function downloadQR() {
-    if (!canvas || canvas.width === 0) return;
-    try {
-      var link = document.createElement("a");
+  const downloadQR = () => {
+    if (!canvas.width) return;
+    canvasToBlob().then((blob) => {
+      if (!blob) {
+        flash("Download failed.", "error");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
       link.download = "qr-code.png";
-      link.href = canvas.toDataURL("image/png");
+      link.href = url;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      flash("QR code downloaded.", "success");
+    });
+  };
 
-      copyMsg.textContent = "PNG downloaded";
-      copyMsg.className = "qr-feedback success";
-      setTimer(function () {
-        if (copyMsg.textContent === "PNG downloaded") {
-          copyMsg.textContent = "";
-          copyMsg.className = "qr-feedback";
-        }
-      }, 2000);
-    } catch (e) {
-      copyMsg.textContent = "Download failed";
-      copyMsg.className = "qr-feedback error";
-    }
-  }
+  const markSuccess = (btn, text) => {
+    const label = btn.querySelector("span");
+    const original = label.textContent;
+    label.textContent = text;
+    btn.classList.add("is-success");
+    btn.disabled = true;
+    setTimeout(() => {
+      label.textContent = original;
+      btn.classList.remove("is-success");
+      btn.disabled = false;
+    }, 1800);
+  };
 
-  async function copyQR() {
-    if (!canvas || canvas.width === 0) return;
-
-    copyMsg.textContent = "";
-    copyMsg.className = "qr-feedback";
-
+  const copyQR = async () => {
+    if (!canvas.width) return;
     try {
-      var blob = await new Promise(function (resolve) {
-        canvas.toBlob(resolve, "image/png");
-      });
-      if (!blob) throw new Error("Blob failed");
-
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob })
-      ]);
-
-      var originalText = copyBtn.textContent;
-      copyBtn.textContent = "Copied";
-      copyBtn.disabled = true;
-
-      copyMsg.textContent = "QR image copied to your clipboard";
-      copyMsg.className = "qr-feedback success";
-
-      setTimer(function () {
-        copyBtn.textContent = originalText;
-        copyBtn.disabled = false;
-        if (copyMsg.textContent === "QR image copied to your clipboard") {
-          copyMsg.textContent = "";
-          copyMsg.className = "qr-feedback";
-        }
-      }, 2000);
-    } catch (err) {
-      copyMsg.textContent = "Copy not supported. Use Download instead.";
-      copyMsg.className = "qr-feedback error";
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error("unsupported");
+      const blob = await canvasToBlob();
+      if (!blob) throw new Error("blob");
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      markSuccess(copyBtn, "Copied");
+      flash("QR code copied to clipboard.", "success");
+    } catch {
+      flash("Copy isn't supported here. Try Download.", "error");
     }
-  }
+  };
 
-  async function shareQR() {
-    if (!canvas || canvas.width === 0) return;
+  const shareQR = async () => {
+    if (!canvas.width) return;
+    if (!navigator.share || typeof File === "undefined") {
+      flash("Sharing isn't supported here.", "error");
+      return;
+    }
+    try {
+      const blob = await canvasToBlob();
+      if (!blob) throw new Error("blob");
+      const file = new File([blob], "qr-code.png", { type: "image/png" });
+      if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+        flash("Sharing isn't supported here.", "error");
+        return;
+      }
+      await navigator.share({ files: [file], title: "QR code" });
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+      flash("Sharing isn't supported here.", "error");
+    }
+  };
 
-    copyMsg.textContent = "";
-    copyMsg.className = "qr-feedback";
+  const setCollapsed = (collapsed, persist) => {
+    shell.classList.toggle("collapsed", collapsed);
+    collapseBtn.setAttribute("aria-expanded", String(!collapsed));
+    const label = collapsed ? "Expand sidebar" : "Collapse sidebar";
+    collapseBtn.setAttribute("aria-label", label);
+    collapseBtn.setAttribute("data-tip", label);
+    collapseLabel.textContent = label;
+    if (persist) {
+      safeStorageSet(localStorage, STORAGE_KEY, collapsed ? "1" : "0");
+    }
+  };
 
-    if (!navigator.share) {
-      copyMsg.textContent = "Sharing isn't supported here.";
-      copyMsg.className = "qr-feedback error";
-      setTimer(function () {
-        if (copyMsg.textContent === "Sharing isn't supported here.") {
-          copyMsg.textContent = "";
-          copyMsg.className = "qr-feedback";
-        }
-      }, 2500);
+  const openDrawer = () => {
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+    drawerBackdrop.classList.add("open");
+    hamburger.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+    drawerClose.focus();
+  };
+
+  const closeDrawer = (returnFocus) => {
+    if (!drawer.classList.contains("open")) return;
+    drawer.classList.remove("open");
+    drawer.setAttribute("aria-hidden", "true");
+    drawerBackdrop.classList.remove("open");
+    hamburger.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+    if (returnFocus) hamburger.focus();
+  };
+
+  const dismissIntro = () => {
+    if (introDismissed || !mobileIntro) return;
+    introDismissed = true;
+    clearTimeout(introTimer);
+    clearTimeout(introFadeTimer);
+    mobileIntro.classList.add("hide");
+    introFadeTimer = setTimeout(() => {
+      mobileIntro.hidden = true;
+    }, INTRO_FADE);
+  };
+
+  const runIntro = () => {
+    if (!mobileIntro) return;
+
+    if (reducedMotionQuery.matches) {
+      mobileIntro.hidden = true;
+      introDismissed = true;
       return;
     }
 
-    try {
-      var blob = await new Promise(function (resolve) {
-        canvas.toBlob(resolve, "image/png");
-      });
-
-      if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], "qr-code.png", { type: "image/png" })] })) {
-        var file = new File([blob], "qr-code.png", { type: "image/png" });
-        await navigator.share({
-          title: "QR Code",
-          text: lastGeneratedValue || "Scan this QR code",
-          files: [file]
-        });
-      } else {
-        await navigator.share({
-          title: "QR Code",
-          text: lastGeneratedValue || "Scan this QR code",
-          url: lastGeneratedValue && (lastGeneratedValue.startsWith("http://") || lastGeneratedValue.startsWith("https://")) ? lastGeneratedValue : undefined
-        });
-      }
-
-      copyMsg.textContent = "Shared successfully";
-      copyMsg.className = "qr-feedback success";
-      setTimer(function () {
-        if (copyMsg.textContent === "Shared successfully") {
-          copyMsg.textContent = "";
-          copyMsg.className = "qr-feedback";
-        }
-      }, 2000);
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        copyMsg.textContent = "Sharing isn't supported here.";
-        copyMsg.className = "qr-feedback error";
-        setTimer(function () {
-          if (copyMsg.textContent === "Sharing isn't supported here.") {
-            copyMsg.textContent = "";
-            copyMsg.className = "qr-feedback";
-          }
-        }, 2500);
-      }
+    const alreadyShown = safeStorageGet(sessionStorage, INTRO_KEY) === "1";
+    if (alreadyShown) {
+      mobileIntro.hidden = true;
+      introDismissed = true;
+      return;
     }
-  }
 
-  generateBtn.addEventListener("click", generateQR);
-  clearBtn.addEventListener("click", clearAll);
-  downloadBtn.addEventListener("click", downloadQR);
-  copyBtn.addEventListener("click", copyQR);
-  shareBtn.addEventListener("click", shareQR);
-  createAnotherBtn.addEventListener("click", createAnother);
+    safeStorageSet(sessionStorage, INTRO_KEY, "1");
 
-  textInput.addEventListener("keydown", function (e) {
+    mobileIntro.hidden = false;
+    mobileIntro.setAttribute("aria-hidden", "true");
+
+    introTimer = setTimeout(() => {
+      dismissIntro();
+    }, INTRO_MIN_DURATION);
+
+    mobileIntro.addEventListener("click", dismissIntro, { once: true });
+  };
+
+  navItems.forEach((el) => {
+    el.addEventListener("click", () => {
+      const view = el.getAttribute("data-view");
+      navItems.forEach((item) => {
+        const active = item.getAttribute("data-view") === view;
+        item.classList.toggle("active", active);
+        if (active) item.setAttribute("aria-current", "page");
+        else item.removeAttribute("aria-current");
+      });
+      closeDrawer(false);
+    });
+  });
+
+  textInput.addEventListener("input", () => {
+    updateCharCount();
+    if (!errorMsg.hidden) {
+      clearError();
+      setStatus(contentStatus, "Ready");
+    }
+  });
+
+  textInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       generateQR();
     }
   });
 
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeDrawer(true);
+      dismissIntro();
+    }
+  });
+
+  reducedMotionQuery.addEventListener("change", (e) => {
+    if (e.matches) dismissIntro();
+  });
+
+  generateBtn.addEventListener("click", generateQR);
+  clearBtn.addEventListener("click", clearAll);
+  copyBtn.addEventListener("click", copyQR);
+  shareBtn.addEventListener("click", shareQR);
+  downloadBtn.addEventListener("click", downloadQR);
+  createAnotherBtn.addEventListener("click", createAnother);
+  collapseBtn.addEventListener("click", () => {
+    setCollapsed(!shell.classList.contains("collapsed"), true);
+  });
+  hamburger.addEventListener("click", openDrawer);
+  drawerClose.addEventListener("click", () => closeDrawer(true));
+  drawerBackdrop.addEventListener("click", () => closeDrawer(true));
+
+  window.addEventListener("pagehide", () => {
+    clearTimeout(generateTimer);
+    clearTimeout(flashTimer);
+    clearTimeout(introTimer);
+    clearTimeout(introFadeTimer);
+  });
+
+  const saved = safeStorageGet(localStorage, STORAGE_KEY);
+  setCollapsed(saved === "1", false);
+
   updateCharCount();
   setPreviewState("empty");
-  applySidebarForViewport();
-
-  if (window.innerWidth > 880) {
-    textInput.focus();
-  }
+  runIntro();
+  if (window.matchMedia("(min-width: 881px)").matches) textInput.focus();
 })();
